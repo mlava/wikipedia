@@ -201,11 +201,9 @@ export default {
                         ":block/uid",
                         await window.roamAlphaAPI.ui.mainWindow.getOpenPageOrBlockUid()
                     ])?.[":node/title"];
-                console.info(pageId, pageTitle);
                 var url = "https://en.wikipedia.org/w/api.php?action=query&format=json&list=search&srsearch=" + pageTitle + "&origin=*";
 
                 return fetch(url).then(r => r.json()).then((wiki) => {
-                    console.error(wiki.query);
                     const options = wiki.query.search
                         .map(m => ({ label: m.title, id: m.pageid }));
                     return prompt({
@@ -216,14 +214,12 @@ export default {
                 }).then((pageID) => {
                     var url = "https://en.wikipedia.org/w/api.php?format=json&action=query&exintro&explaintext&exsentences=" + sentences + "&exlimit=max&origin=*&prop=info|extracts&inprop=url&pageids=" + pageID + "";
                     var url1 = "https://en.wikipedia.org/w/api.php?action=query&prop=pageimages&format=json&piprop=original&titles=" + pageTitle + "&format=json&formatversion=2&origin=*";
-                    console.info(url, url1);
                     return !pageID ? [{ text: "No items selected!" }] : (() => {
                         const getExtract = new Promise((resolve) => {
                             fetch(url).then(r => r.json()).then((wiki) => {
                                 var string = "" + wiki.query.pages[pageID].extract + "";
                                 var cURL = "" + wiki.query.pages[pageID].canonicalurl + "";
                                 var extractResults = { string, cURL };
-                                console.info(extractResults);
                                 resolve(extractResults);
                             })
                         });
@@ -231,18 +227,16 @@ export default {
                         const getImage = new Promise((resolve) => {
                             fetch(url1).then(r => r.json()).then((wikiImages) => {
                                 if (wikiImages.query.pages[0].hasOwnProperty('original')) {
-                                    var stringa = "![](" + wikiImages.query.pages[0].original.source + ")";
-                                    console.info(stringa);
-                                    resolve(stringa);
+                                    var string = "![](" + wikiImages.query.pages[0].original.source + ")";
+                                    resolve(string);
                                 } else {
                                     resolve("No Image Available");
                                 }
                             })
                         });
 
-                        Promise.allSettled([getExtract, getImage])
+                        return Promise.allSettled([getExtract, getImage])
                             .then(async results => {
-                                console.info(results);
                                 return [
                                     {
                                         text: "**Wikipedia Summary:** #rm-hide #rm-horizontal",
@@ -252,7 +246,7 @@ export default {
                                         ]
                                     },
                                     {
-                                        text: "![](" + results[0].value.cURL + ")  "
+                                        text: "" + results[0].value.cURL + ""
                                     },
                                 ];
                             }

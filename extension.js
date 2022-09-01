@@ -134,12 +134,6 @@ const config = {
     tabTitle: "Wikipedia import",
     settings: [
         {
-            id: "wiki-mode",
-            name: "Import Mode",
-            description: "Enter either title (page title) or prompt",
-            action: { type: "input", placeholder: "title" },
-        },
-        {
             id: "wiki-sentences",
             name: "Extract sentences",
             description: "Number of sentences to import",
@@ -185,24 +179,12 @@ export default {
         }
 
         async function fetchWiki(uid) {
-            var key, mode, sentences, query, imageURL;
+            var key, sentences;
             breakme: {
-                if (!extensionAPI.settings.get("wiki-mode")) {
-                    mode = "title";
-                } else {
-                    const regex = /^title|prompt$/;
-                    if (extensionAPI.settings.get("wiki-mode").match(regex)) {
-                        mode = extensionAPI.settings.get("wiki-mode");
-                    } else {
-                        key = "mode";
-                        sendConfigAlert(key);
-                        break breakme;
-                    }
-                }
                 if (!extensionAPI.settings.get("wiki-sentences")) {
                     sentences = "6";
                 } else {
-                    const regex = /^[0-9]{1,3}$/;
+                    const regex = /^[0-9]{1,2}$/;
                     if (extensionAPI.settings.get("wiki-sentences").match(regex)) {
                         sentences = extensionAPI.settings.get("wiki-sentences");
                     } else {
@@ -219,14 +201,8 @@ export default {
                         ":block/uid",
                         await window.roamAlphaAPI.ui.mainWindow.getOpenPageOrBlockUid()
                     ])?.[":node/title"];
-
-                if (mode == "prompt") {
-                    var prompted = window.prompt("Please enter your query", "" + pageTitle + "");
-                    query = prompted;
-                } else {
-                    query = pageTitle;
-                }
-                var url = "https://en.wikipedia.org/w/api.php?action=query&format=json&list=search&srsearch=" + query + "&origin=*";
+                console.info(pageId, pageTitle);
+                var url = "https://en.wikipedia.org/w/api.php?action=query&format=json&list=search&srsearch=" + pageTitle + "&origin=*";
 
                 return fetch(url).then(r => r.json()).then((wiki) => {
                     console.error(wiki.query);
@@ -240,45 +216,48 @@ export default {
                 }).then((pageID) => {
                     var url = "https://en.wikipedia.org/w/api.php?format=json&action=query&exintro&explaintext&exsentences=" + sentences + "&exlimit=max&origin=*&prop=info|extracts&inprop=url&pageids=" + pageID + "";
                     var url1 = "https://en.wikipedia.org/w/api.php?action=query&prop=pageimages&format=json&piprop=original&titles=" + pageTitle + "&format=json&formatversion=2&origin=*";
+                    console.info(url, url1);
+                    return !pageID ? [{ text: "No items selected!" }] : (() => {
+                        const getExtract = new Promise((resolve) => {
+                            fetch(url).then(r => r.json()).then((wiki) => {
+                                var string = "" + wiki.query.pages[pageID].extract + "";
+                                var cURL = "" + wiki.query.pages[pageID].canonicalurl + "";
+                                var extractResults = { string, cURL };
+                                console.info(extractResults);
+                                resolve(extractResults);
+                            })
+                        });
 
-                    return !pageID ? [{ text: "No items selected!" }] : (()=>{ 
-                    const getExtract = new Promise((resolve) => {
-                        fetch(url).then(r => r.json()).then((wiki) => {
-                            var string = "" + wiki.query.pages[pageID].extract + "";
-                            var cURL = "" + wiki.query.pages[pageID].canonicalurl + "";
-                            var extractResults = { string, cURL };
-                            resolve(extractResults);
-                        })
-                    });
+                        const getImage = new Promise((resolve) => {
+                            fetch(url1).then(r => r.json()).then((wikiImages) => {
+                                if (wikiImages.query.pages[0].hasOwnProperty('original')) {
+                                    var stringa = "![](" + wikiImages.query.pages[0].original.source + ")";
+                                    console.info(stringa);
+                                    resolve(stringa);
+                                } else {
+                                    resolve("No Image Available");
+                                }
+                            })
+                        });
 
-                    const getImage = new Promise((resolve) => {
-                        fetch(url1).then(r => r.json()).then((wikiImages) => {
-                            if (wikiImages.query.pages[0].hasOwnProperty('original')) {
-                                var string = "![](" + wikiImages.query.pages[0].original.source + ")";
-                                resolve(string);
-                            } else {
-                                resolve("No Image Available");
+                        Promise.allSettled([getExtract, getImage])
+                            .then(async results => {
+                                console.info(results);
+                                return [
+                                    {
+                                        text: "**Wikipedia Summary:** #rm-hide #rm-horizontal",
+                                        children: [
+                                            { text: ""+results[0].value.string+"" },
+                                            { text: ""+results[1].value+"" },
+                                        ]
+                                    },
+                                    {
+                                        text: "![](" + results[0].value.cURL + ")  "
+                                    },
+                                ];
                             }
-                        })
-                    });
-
-                    Promise.allSettled([getExtract, getImage])
-                        .then(async results => {
-                            return [
-                                {
-                                    text: "**Wikipedia Summary:** #rm-hide #rm-horizontal",
-                                    children: [
-                                        { text: ""+results[0].value.string+"" },
-                                        { text: ""+results[1].value+"" },
-                                    ],
-                                },
-                                {
-                                    text: ""+results[0].value.cURL+"",
-                                },
-                            ];
-                        }
-                    );                  
-                })();
+                            );
+                    })();
                 })
             }
         }
@@ -294,9 +273,7 @@ export default {
 }
 
 function sendConfigAlert(key) {
-    if (key == "mode") {
-        alert("Please set either prompt or title in the configuration settings via the Roam Depot tab.");
-    } else if (key == "sentences") {
+    if (key == "sentences") {
         alert("Please enter an integer for extract length in the configuration settings via the Roam Depot tab.");
     }
 }

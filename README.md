@@ -4,7 +4,7 @@ You can configure the number of sentences from the extract to obtain in the Roam
 
 Trigger this either by:
 
-- Command Palette using the command 'Wikipedia import'
+- Command Palette using the command 'Wikipedia Page Import'
 - Using SmartBlocks using the <%WIKIPEDIA%>
 
 Example output:

@@ -17,3 +17,6 @@ Both of these options can be triggered via the Command Palette or via SmartBlock
 
 - Wikipedia On This Day or <%ONTHISDAY%>
 - Wikipedia Featured Content or <%WIKIFEATURED%>
+
+![image](https://user-images.githubusercontent.com/6857790/189469673-fee464b7-567f-40e6-8461-631a1c7cae25.png)
+![image](https://user-images.githubusercontent.com/6857790/189469705-ad5a03dc-6445-4dde-a681-472943fb7729.png)

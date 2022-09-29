@@ -50,7 +50,7 @@ const FormDialog = ({
             window.React.createElement(
                 window.Blueprint.Core.Label,
                 {},
-                "Movies:",
+                "Wikipedia Entries:",
                 window.React.createElement(
                     window.Blueprint.Select.Select,
                     {

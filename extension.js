@@ -151,12 +151,22 @@ export default {
             callback: () => {
                 const uid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
                 fetchWiki(uid).then(async (blocks) => {
-                    const parentUid = uid || await window.roamAlphaAPI.ui.mainWindow.getOpenPageOrBlockUid();
-                    blocks.forEach((node, order) => createBlock({
-                        parentUid,
-                        order,
-                        node
-                    }))
+                    if (uid != undefined) {
+                        const pageId = window.roamAlphaAPI.pull("[*]", [":block/uid", uid])?.[":block/page"]?.[":db/id"];
+                        const parentUid = window.roamAlphaAPI.pull("[:block/uid]", pageId)?.[":block/uid"];
+                        blocks.forEach((node, order) => createBlock({
+                            parentUid,
+                            order,
+                            node
+                        }));
+                    } else {
+                        const parentUid = await window.roamAlphaAPI.ui.mainWindow.getOpenPageOrBlockUid();
+                        blocks.forEach((node, order) => createBlock({
+                            parentUid,
+                            order,
+                            node
+                        }))
+                    }
                 });
             },
         });
@@ -165,12 +175,22 @@ export default {
             callback: () => {
                 const uid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
                 fetchOTD().then(async (blocks) => {
-                    const parentUid = uid || await window.roamAlphaAPI.ui.mainWindow.getOpenPageOrBlockUid();
-                    blocks.forEach((node, order) => createBlock({
-                        parentUid,
-                        order,
-                        node
-                    }))
+                    if (uid != undefined) {
+                        const pageId = window.roamAlphaAPI.pull("[*]", [":block/uid", uid])?.[":block/page"]?.[":db/id"];
+                        const parentUid = window.roamAlphaAPI.pull("[:block/uid]", pageId)?.[":block/uid"];
+                        blocks.forEach((node, order) => createBlock({
+                            parentUid,
+                            order,
+                            node
+                        }));
+                    } else {
+                        const parentUid = await window.roamAlphaAPI.ui.mainWindow.getOpenPageOrBlockUid();
+                        blocks.forEach((node, order) => createBlock({
+                            parentUid,
+                            order,
+                            node
+                        }))
+                    }
                 })
             }
         });
@@ -179,12 +199,22 @@ export default {
             callback: () => {
                 const uid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
                 fetchWFC().then(async (blocks) => {
-                    const parentUid = uid || await window.roamAlphaAPI.ui.mainWindow.getOpenPageOrBlockUid();
-                    blocks.forEach((node, order) => createBlock({
-                        parentUid,
-                        order,
-                        node
-                    }))
+                    if (uid != undefined) {
+                        const pageId = window.roamAlphaAPI.pull("[*]", [":block/uid", uid])?.[":block/page"]?.[":db/id"];
+                        const parentUid = window.roamAlphaAPI.pull("[:block/uid]", pageId)?.[":block/uid"];
+                        blocks.forEach((node, order) => createBlock({
+                            parentUid,
+                            order,
+                            node
+                        }));
+                    } else {
+                        const parentUid = await window.roamAlphaAPI.ui.mainWindow.getOpenPageOrBlockUid();
+                        blocks.forEach((node, order) => createBlock({
+                            parentUid,
+                            order,
+                            node
+                        }))
+                    }
                 })
             }
         });
@@ -207,32 +237,15 @@ export default {
 
         if (window.roamjs?.extension?.smartblocks) {
             window.roamjs.extension.smartblocks.registerCommand(args);
-        } else {
-            document.body.addEventListener(
-                `roamjs:smartblocks:loaded`,
-                () =>
-                    window.roamjs?.extension.smartblocks &&
-                    window.roamjs.extension.smartblocks.registerCommand(args)
-            );
-        }
-        if (window.roamjs?.extension?.smartblocks) {
             window.roamjs.extension.smartblocks.registerCommand(args1);
-        } else {
-            document.body.addEventListener(
-                `roamjs:smartblocks:loaded`,
-                () =>
-                    window.roamjs?.extension.smartblocks &&
-                    window.roamjs.extension.smartblocks.registerCommand(args1)
-            );
-        }
-
-        if (window.roamjs?.extension?.smartblocks) {
             window.roamjs.extension.smartblocks.registerCommand(args2);
         } else {
             document.body.addEventListener(
                 `roamjs:smartblocks:loaded`,
                 () =>
                     window.roamjs?.extension.smartblocks &&
+                    window.roamjs.extension.smartblocks.registerCommand(args) &&
+                    window.roamjs.extension.smartblocks.registerCommand(args1) &&
                     window.roamjs.extension.smartblocks.registerCommand(args2)
             );
         }

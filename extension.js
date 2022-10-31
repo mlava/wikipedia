@@ -150,23 +150,28 @@ export default {
             label: "Wikipedia Page Import",
             callback: () => {
                 const uid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
+                if (uid == undefined) {
+                    alert("Please make sure to focus a block before importing from Wikipedia");
+                    return;
+                }
                 fetchWiki(uid).then(async (blocks) => {
-                    if (uid != undefined) {
-                        const pageId = window.roamAlphaAPI.pull("[*]", [":block/uid", uid])?.[":block/page"]?.[":db/id"];
-                        const parentUid = window.roamAlphaAPI.pull("[:block/uid]", pageId)?.[":block/uid"];
-                        blocks.forEach((node, order) => createBlock({
-                            parentUid,
-                            order,
-                            node
-                        }));
-                    } else {
-                        const parentUid = await window.roamAlphaAPI.ui.mainWindow.getOpenPageOrBlockUid();
-                        blocks.forEach((node, order) => createBlock({
-                            parentUid,
-                            order,
-                            node
-                        }))
+                    await window.roamAlphaAPI.updateBlock(
+                        { block: { uid: uid, string: blocks[0].text.toString(), open: true } });
+                    
+                    for (var i = 0; i < blocks[0].children.length; i++) {
+                        var thisBlock = window.roamAlphaAPI.util.generateUID();
+                        await window.roamAlphaAPI.createBlock({
+                            location: { "parent-uid": uid, order: i+1 },
+                            block: { string: blocks[0].children[i].text.toString(), uid: thisBlock }
+                        });
                     }
+                    const pageId = await window.roamAlphaAPI.pull("[*]", [":block/uid", uid])?.[":block/page"]?.[":db/id"];
+                    const pageUID = await window.roamAlphaAPI.pull("[:block/uid]", pageId)?.[":block/uid"]
+                    let order = await window.roamAlphaAPI.q(`[:find ?o :where [?r :block/order ?o] [?r :block/uid "${uid}"]]`)?.[0]?.[0]; // thanks to David Vargas https://github.com/dvargas92495/roam-client/blob/main/src/queries.ts#L58                var thisBlock = window.roamAlphaAPI.util.generateUID();
+                    await window.roamAlphaAPI.createBlock({
+                        location: { "parent-uid": pageUID, order: order+1 },
+                        block: { string: blocks[1].text.toString(), uid: thisBlock }
+                    });
                 });
             },
         });
@@ -174,22 +179,19 @@ export default {
             label: "Wikipedia On This Day",
             callback: () => {
                 const uid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
+                if (uid == undefined) {
+                    alert("Please make sure to focus a block before importing from Wikipedia");
+                    return;
+                }
                 fetchOTD().then(async (blocks) => {
-                    if (uid != undefined) {
-                        const pageId = window.roamAlphaAPI.pull("[*]", [":block/uid", uid])?.[":block/page"]?.[":db/id"];
-                        const parentUid = window.roamAlphaAPI.pull("[:block/uid]", pageId)?.[":block/uid"];
-                        blocks.forEach((node, order) => createBlock({
-                            parentUid,
-                            order,
-                            node
-                        }));
-                    } else {
-                        const parentUid = await window.roamAlphaAPI.ui.mainWindow.getOpenPageOrBlockUid();
-                        blocks.forEach((node, order) => createBlock({
-                            parentUid,
-                            order,
-                            node
-                        }))
+                    await window.roamAlphaAPI.updateBlock(
+                        { block: { uid: uid, string: blocks[0].text.toString(), open: true } });
+                    for (var i = 0; i < blocks[0].children.length; i++) {
+                        var thisBlock = window.roamAlphaAPI.util.generateUID();
+                        await window.roamAlphaAPI.createBlock({
+                            location: { "parent-uid": uid, order: i+1 },
+                            block: { string: blocks[0].children[i].text.toString(), uid: thisBlock }
+                        });
                     }
                 })
             }
@@ -198,22 +200,19 @@ export default {
             label: "Wikipedia Featured Content",
             callback: () => {
                 const uid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
+                if (uid == undefined) {
+                    alert("Please make sure to focus a block before importing from Wikipedia");
+                    return;
+                }
                 fetchWFC().then(async (blocks) => {
-                    if (uid != undefined) {
-                        const pageId = window.roamAlphaAPI.pull("[*]", [":block/uid", uid])?.[":block/page"]?.[":db/id"];
-                        const parentUid = window.roamAlphaAPI.pull("[:block/uid]", pageId)?.[":block/uid"];
-                        blocks.forEach((node, order) => createBlock({
-                            parentUid,
-                            order,
-                            node
-                        }));
-                    } else {
-                        const parentUid = await window.roamAlphaAPI.ui.mainWindow.getOpenPageOrBlockUid();
-                        blocks.forEach((node, order) => createBlock({
-                            parentUid,
-                            order,
-                            node
-                        }))
+                    await window.roamAlphaAPI.updateBlock(
+                        { block: { uid: uid, string: blocks[0].text.toString(), open: true } });
+                    for (var i = 0; i < blocks[0].children.length; i++) {
+                        var thisBlock = window.roamAlphaAPI.util.generateUID();
+                        await window.roamAlphaAPI.createBlock({
+                            location: { "parent-uid": uid, order: i+1 },
+                            block: { string: blocks[0].children[i].text.toString(), uid: thisBlock }
+                        });
                     }
                 })
             }
@@ -394,9 +393,9 @@ async function fetchOTD() {
             {
                 text: "**On this Day...** #rm-hide #rm-horizontal",
                 children: [
-                    {text: string},
-                    {text: string1},
-                    {text: string2},
+                    { text: string },
+                    { text: string1 },
+                    { text: string2 },
                 ]
             }
         ];
@@ -420,7 +419,7 @@ async function fetchWFC() {
                 text: "**Featured Article: [[" + data.tfa.titles.normalized + "]]** #rm-hide #rm-horizontal",
                 children: [
                     { text: "" + data.tfa.extract + "" },
-                    { text: "!["+data.tfa.titles.normalized+"](" + data.tfa.originalimage.source + ")" },
+                    { text: "![" + data.tfa.titles.normalized + "](" + data.tfa.originalimage.source + ")" },
                 ]
             },
             {

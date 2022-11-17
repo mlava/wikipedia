@@ -153,6 +153,9 @@ export default {
                 if (uid == undefined) {
                     alert("Please make sure to focus a block before importing from Wikipedia");
                     return;
+                } else {
+                    window.roamAlphaAPI.updateBlock(
+                        { block: { uid: uid, string: "Loading...".toString(), open: true } });
                 }
                 fetchWiki(uid).then(async (blocks) => {
                     await window.roamAlphaAPI.updateBlock(
@@ -182,6 +185,9 @@ export default {
                 if (uid == undefined) {
                     alert("Please make sure to focus a block before importing from Wikipedia");
                     return;
+                } else {
+                    window.roamAlphaAPI.updateBlock(
+                        { block: { uid: uid, string: "Loading...".toString(), open: true } });
                 }
                 fetchOTD().then(async (blocks) => {
                     await window.roamAlphaAPI.updateBlock(
@@ -203,6 +209,9 @@ export default {
                 if (uid == undefined) {
                     alert("Please make sure to focus a block before importing from Wikipedia");
                     return;
+                } else {
+                    window.roamAlphaAPI.updateBlock(
+                        { block: { uid: uid, string: "Loading...".toString(), open: true } });
                 }
                 fetchWFC().then(async (blocks) => {
                     await window.roamAlphaAPI.updateBlock(
@@ -289,8 +298,11 @@ export default {
                         const getExtract = new Promise((resolve) => {
                             fetch(url).then(r => r.json()).then((wiki) => {
                                 var string = "" + wiki.query.pages[pageID].extract + "";
+                                const regex = /([a-z])\.([A-Z])/gm;
+                                const subst = `$1.\n\n$2`;
+                                const result = string.replace(regex, subst);
                                 var cURL = "" + wiki.query.pages[pageID].canonicalurl + "";
-                                var extractResults = { string, cURL };
+                                var extractResults = { result, cURL };
                                 resolve(extractResults);
                             })
                         });
@@ -312,7 +324,7 @@ export default {
                                     {
                                         text: "**Wikipedia Summary:** #rm-hide #rm-horizontal",
                                         children: [
-                                            { text: "" + results[0].value.string + "" },
+                                            { text: "" + results[0].value.result + "" },
                                             { text: "" + results[1].value + "" },
                                         ]
                                     },

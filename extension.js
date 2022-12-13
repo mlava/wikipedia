@@ -386,20 +386,25 @@ async function fetchOTD() {
         }
         var ranNums = shuffle(data.selected);
 
+        const regex = /(\(pictured\) )/gm;
+        const subst = ``;
         let string = "in ";
         string += ranNums[0].year;
         string += ":\n\n";
-        string += ranNums[0].text;
+        const result = ranNums[0].text.replace(regex, subst);
+        string += result;
         string += "";
         let string1 = "in ";
         string1 += ranNums[1].year;
         string1 += ":\n\n";
-        string1 += ranNums[1].text;
+        const result1 = ranNums[1].text.replace(regex, subst);
+        string1 += result1;
         string1 += "";
         let string2 = "in ";
         string2 += ranNums[2].year;
         string2 += ":\n\n";
-        string2 += ranNums[2].text;
+        const result2 = ranNums[2].text.replace(regex, subst);
+        string2 += result2;
         string2 += "";
         return [
             {

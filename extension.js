@@ -294,11 +294,12 @@ export default {
                 }).then((pageID) => {
                     var url = "https://en.wikipedia.org/w/api.php?format=json&action=query&exintro&explaintext&exsentences=" + sentences + "&exlimit=max&origin=*&prop=info|extracts&inprop=url&pageids=" + pageID + "";
                     var url1 = "https://en.wikipedia.org/w/api.php?action=query&prop=pageimages&format=json&piprop=original&titles=" + pageTitle + "&format=json&formatversion=2&origin=*";
-                    return !pageID ? [{ text: "No items selected!" }] : (() => {
+                    return !pageID ? [{ text: "No items selected!" }] : (async () => {
                         const getExtract = new Promise((resolve) => {
                             fetch(url).then(r => r.json()).then((wiki) => {
+                                console.info(wiki.query.pages[pageID].extract);
                                 var string = "" + wiki.query.pages[pageID].extract + "";
-                                const regex = /([a-z])\.([A-Z])/gm;
+                                const regex = /([a-z'"\)])\.([A-Z])/gm;
                                 const subst = `$1.\n\n$2`;
                                 const result = string.replace(regex, subst);
                                 var cURL = "" + wiki.query.pages[pageID].canonicalurl + "";
@@ -318,22 +319,19 @@ export default {
                             })
                         });
 
-                        return Promise.allSettled([getExtract, getImage])
-                            .then(async results => {
-                                return [
-                                    {
-                                        text: "**Wikipedia Summary:** #rm-hide #rm-horizontal",
-                                        children: [
-                                            { text: "" + results[0].value.result + "" },
-                                            { text: "" + results[1].value + "" },
-                                        ]
-                                    },
-                                    {
-                                        text: "" + results[0].value.cURL + ""
-                                    },
-                                ];
-                            }
-                            );
+                        const results = await Promise.allSettled([getExtract, getImage]);
+                        return await [
+                            {
+                                text: "**Wikipedia Summary:** #rm-hide #rm-horizontal",
+                                children: [
+                                    { text: "" + results[0].value.result + "" },
+                                    { text: "" + results[1].value + "" },
+                                ]
+                            },
+                            {
+                                text: "" + results[0].value.cURL + ""
+                            },
+                        ];
                     })();
                 })
             }

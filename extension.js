@@ -384,7 +384,7 @@ async function fetchOTD() {
         }
         var ranNums = shuffle(data.selected);
 
-        const regex = /(\(pictured\) )/gm;
+        const regex = /(\s\((illustration)?\s?pictured\))/gm;
         const subst = ``;
         let string = "in ";
         string += ranNums[0].year;

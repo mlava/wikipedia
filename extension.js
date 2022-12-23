@@ -297,7 +297,6 @@ export default {
                     return !pageID ? [{ text: "No items selected!" }] : (async () => {
                         const getExtract = new Promise((resolve) => {
                             fetch(url).then(r => r.json()).then((wiki) => {
-                                console.info(wiki.query.pages[pageID].extract);
                                 var string = "" + wiki.query.pages[pageID].extract + "";
                                 const regex = /([a-z'"\)])\.([A-Z])/gm;
                                 const subst = `$1.\n\n$2`;
@@ -384,7 +383,7 @@ async function fetchOTD() {
         }
         var ranNums = shuffle(data.selected);
 
-        const regex = /(\s\((.+)?\s?pictured\))/gm;
+        const regex = /(\s\((.+)?\s?pictured\)|\s\(painting shown\))/gm;
         const subst = ``;
         let string = "in ";
         string += ranNums[0].year;

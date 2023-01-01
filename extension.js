@@ -130,21 +130,51 @@ const prompt = ({
         )
     });
 
-const config = {
-    tabTitle: "Wikipedia import",
-    settings: [
-        {
-            id: "wiki-sentences",
-            name: "Extract sentences",
-            description: "Number of sentences to import",
-            action: { type: "input", placeholder: "6" },
-        },
-    ]
-};
+var ARTlanguage = "en";
+var OTDlanguage = "en";
+var FClanguage = "en";
 
 export default {
     onload: ({ extensionAPI }) => {
+        const config = {
+            tabTitle: "Wikipedia import",
+            settings: [
+                {
+                    id: "wiki-sentences",
+                    name: "Extract sentences",
+                    description: "Number of sentences to import",
+                    action: { type: "input", placeholder: "6" },
+                },
+                {
+                    id: "wiki-art-language",
+                    name: "Wikipedia language",
+                    description: "Any language code from https://wikistats.wmcloud.org/display.php?t=wp",
+                    action: { type: "input", placeholder: "en", onChange: (evt) => { ARTlanguage = evt.target.value; } },
+                },
+                {
+                    id: "wiki-feat-language",
+                    name: "Featured Article language",
+                    description: "Two-letter language code",
+                    action: { type: "select", items: ["bn", "de", "el", "en", "he", "hu", "ja", "la", "sd", "sv", "ur", "zh"], onChange: (evt) => { FClanguage = evt; } },
+                },
+                {
+                    id: "wiki-otd-language",
+                    name: "On This Day language",
+                    description: "Two-letter language code",
+                    action: { type: "select", items: ["en", "de", "fr", "sv", "pt", "ru", "es", "ar", "bs"], onChange: (evt) => { OTDlanguage = evt; } },
+                },
+            ]
+        };
         extensionAPI.settings.panel.create(config);
+
+        // onload
+        if (extensionAPI.settings.get("wiki-art-language")) {
+            ARTlanguage = extensionAPI.settings.get("wiki-art-language");
+        } else {
+            ARTlanguage = "en";
+        }
+        FClanguage = extensionAPI.settings.get("wiki-feat-language");
+        OTDlanguage = extensionAPI.settings.get("wiki-otd-language");
 
         window.roamAlphaAPI.ui.commandPalette.addCommand({
             label: "Wikipedia Page Import",
@@ -160,11 +190,11 @@ export default {
                 fetchWiki(uid).then(async (blocks) => {
                     await window.roamAlphaAPI.updateBlock(
                         { block: { uid: uid, string: blocks[0].text.toString(), open: true } });
-                    
+
                     for (var i = 0; i < blocks[0].children.length; i++) {
                         var thisBlock = window.roamAlphaAPI.util.generateUID();
                         await window.roamAlphaAPI.createBlock({
-                            location: { "parent-uid": uid, order: i+1 },
+                            location: { "parent-uid": uid, order: i + 1 },
                             block: { string: blocks[0].children[i].text.toString(), uid: thisBlock }
                         });
                     }
@@ -172,7 +202,7 @@ export default {
                     const pageUID = await window.roamAlphaAPI.pull("[:block/uid]", pageId)?.[":block/uid"]
                     let order = await window.roamAlphaAPI.q(`[:find ?o :where [?r :block/order ?o] [?r :block/uid "${uid}"]]`)?.[0]?.[0]; // thanks to David Vargas https://github.com/dvargas92495/roam-client/blob/main/src/queries.ts#L58                var thisBlock = window.roamAlphaAPI.util.generateUID();
                     await window.roamAlphaAPI.createBlock({
-                        location: { "parent-uid": pageUID, order: order+1 },
+                        location: { "parent-uid": pageUID, order: order + 1 },
                         block: { string: blocks[1].text.toString(), uid: thisBlock }
                     });
                 });
@@ -195,7 +225,7 @@ export default {
                     for (var i = 0; i < blocks[0].children.length; i++) {
                         var thisBlock = window.roamAlphaAPI.util.generateUID();
                         await window.roamAlphaAPI.createBlock({
-                            location: { "parent-uid": uid, order: i+1 },
+                            location: { "parent-uid": uid, order: i + 1 },
                             block: { string: blocks[0].children[i].text.toString(), uid: thisBlock }
                         });
                     }
@@ -219,7 +249,31 @@ export default {
                     for (var i = 0; i < blocks[0].children.length; i++) {
                         var thisBlock = window.roamAlphaAPI.util.generateUID();
                         await window.roamAlphaAPI.createBlock({
-                            location: { "parent-uid": uid, order: i+1 },
+                            location: { "parent-uid": uid, order: i + 1 },
+                            block: { string: blocks[0].children[i].text.toString(), uid: thisBlock }
+                        });
+                    }
+                })
+            }
+        });
+        window.roamAlphaAPI.ui.commandPalette.addCommand({
+            label: "Wikipedia Featured Image",
+            callback: () => {
+                const uid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
+                if (uid == undefined) {
+                    alert("Please make sure to focus a block before importing from Wikipedia");
+                    return;
+                } else {
+                    window.roamAlphaAPI.updateBlock(
+                        { block: { uid: uid, string: "Loading...".toString(), open: true } });
+                }
+                fetchWFCI().then(async (blocks) => {
+                    await window.roamAlphaAPI.updateBlock(
+                        { block: { uid: uid, string: blocks[0].text.toString(), open: true } });
+                    for (var i = 0; i < blocks[0].children.length; i++) {
+                        var thisBlock = window.roamAlphaAPI.util.generateUID();
+                        await window.roamAlphaAPI.createBlock({
+                            location: { "parent-uid": uid, order: i + 1 },
                             block: { string: blocks[0].children[i].text.toString(), uid: thisBlock }
                         });
                     }
@@ -242,11 +296,17 @@ export default {
             help: "Import today's featured content from Wikipedia",
             handler: (context) => fetchWFC,
         };
+        const args3 = {
+            text: "WIKIIMAGE",
+            help: "Import today's featured image from Wikipedia",
+            handler: (context) => fetchWFCI,
+        };
 
         if (window.roamjs?.extension?.smartblocks) {
             window.roamjs.extension.smartblocks.registerCommand(args);
             window.roamjs.extension.smartblocks.registerCommand(args1);
             window.roamjs.extension.smartblocks.registerCommand(args2);
+            window.roamjs.extension.smartblocks.registerCommand(args3);
         } else {
             document.body.addEventListener(
                 `roamjs:smartblocks:loaded`,
@@ -254,7 +314,8 @@ export default {
                     window.roamjs?.extension.smartblocks &&
                     window.roamjs.extension.smartblocks.registerCommand(args) &&
                     window.roamjs.extension.smartblocks.registerCommand(args1) &&
-                    window.roamjs.extension.smartblocks.registerCommand(args2)
+                    window.roamjs.extension.smartblocks.registerCommand(args2) &&
+                    window.roamjs.extension.smartblocks.registerCommand(args3)
             );
         }
 
@@ -281,8 +342,8 @@ export default {
                         ":block/uid",
                         await window.roamAlphaAPI.ui.mainWindow.getOpenPageOrBlockUid()
                     ])?.[":node/title"];
-                var url = "https://en.wikipedia.org/w/api.php?action=query&format=json&list=search&srsearch=" + pageTitle + "&origin=*";
-
+                var url = `https://${ARTlanguage}.wikipedia.org/w/api.php?action=query&format=json&list=search&srsearch=${pageTitle}&origin=*`;
+                
                 return fetch(url).then(r => r.json()).then((wiki) => {
                     const options = wiki.query.search
                         .map(m => ({ label: m.title, id: m.pageid }));
@@ -292,8 +353,8 @@ export default {
                         options,
                     })
                 }).then((pageID) => {
-                    var url = "https://en.wikipedia.org/w/api.php?format=json&action=query&exintro&explaintext&exsentences=" + sentences + "&exlimit=max&origin=*&prop=info|extracts&inprop=url&pageids=" + pageID + "";
-                    var url1 = "https://en.wikipedia.org/w/api.php?action=query&prop=pageimages&format=json&piprop=original&titles=" + pageTitle + "&format=json&formatversion=2&origin=*";
+                    var url = `https://${ARTlanguage}.wikipedia.org/w/api.php?format=json&action=query&exintro&explaintext&exsentences=${sentences}&exlimit=max&origin=*&prop=info|extracts&inprop=url&pageids=${pageID}`;
+                    var url1 = `https://${ARTlanguage}.wikipedia.org/w/api.php?action=query&prop=pageimages&format=json&piprop=original&titles=${pageTitle}&format=json&formatversion=2&origin=*`;
                     return !pageID ? [{ text: "No items selected!" }] : (async () => {
                         const getExtract = new Promise((resolve) => {
                             fetch(url).then(r => r.json()).then((wiki) => {
@@ -319,7 +380,7 @@ export default {
                         });
 
                         const results = await Promise.allSettled([getExtract, getImage]);
-                        return await [
+                        return [
                             {
                                 text: "**Wikipedia Summary:** #rm-hide #rm-horizontal",
                                 children: [
@@ -335,6 +396,115 @@ export default {
                 })
             }
         }
+
+        async function fetchOTD() {
+            let today = new Date();
+            let month = today.getMonth() + 1;
+            let day = today.getDate();
+            let url = `https://api.wikimedia.org/feed/v1/wikipedia/${OTDlanguage}/onthisday/all/${month}/${day}`;
+
+            let response = await fetch(url);
+            if (response.ok) {
+                let data = await response.json();
+                function shuffle(array) {
+                    var i = array.length,
+                        j = 0,
+                        temp;
+                    while (i--) {
+                        j = Math.floor(Math.random() * (i + 1));
+                        temp = array[i];
+                        array[i] = array[j];
+                        array[j] = temp;
+                    }
+                    return array;
+                }
+                var ranNums = shuffle(data.selected);
+
+                const regex = /(\s\((.+)?\s?pictured\)|\s\((.+)?\s?shown\)|\s\((.+)?\s?depicted\))/gm;
+                const subst = ``;
+                let string = "in ";
+                string += ranNums[0].year;
+                string += ":\n\n";
+                const result = ranNums[0].text.replace(regex, subst);
+                string += result;
+                string += "";
+                let string1 = "in ";
+                string1 += ranNums[1].year;
+                string1 += ":\n\n";
+                const result1 = ranNums[1].text.replace(regex, subst);
+                string1 += result1;
+                string1 += "";
+                let string2 = "in ";
+                string2 += ranNums[2].year;
+                string2 += ":\n\n";
+                const result2 = ranNums[2].text.replace(regex, subst);
+                string2 += result2;
+                string2 += "";
+                return [
+                    {
+                        text: "**On this Day...** #rm-hide #rm-horizontal",
+                        children: [
+                            { text: string },
+                            { text: string1 },
+                            { text: string2 },
+                        ]
+                    }
+                ];
+            } else {
+                console.error(data);
+            }
+        };
+
+        async function fetchWFC() {
+            let today = new Date();
+            let year = today.getFullYear();
+            var dd = String(today.getDate()).padStart(2, '0');
+            var mm = String(today.getMonth() + 1).padStart(2, '0');
+            let url = `https://api.wikimedia.org/feed/v1/wikipedia/${FClanguage}/featured/${year}/${mm}/${dd}`;
+
+            let response = await fetch(url);
+            if (response.ok) {
+                let data = await response.json();
+                return [
+                    {
+                        text: "**Featured Article: [[" + data.tfa.titles.normalized + "]]** #rm-hide #rm-horizontal",
+                        children: [
+                            { text: "" + data.tfa.extract + "" },
+                            { text: "![" + data.tfa.titles.normalized + "](" + data.tfa.originalimage.source + ")" },
+                        ]
+                    },
+                    {
+                        text: "" + data.tfa.content_urls.desktop.page + ""
+                    },
+                ];
+            } else {
+                console.error(data);
+            }
+        };
+
+        async function fetchWFCI() {
+            let today = new Date();
+            let year = today.getFullYear();
+            var dd = String(today.getDate()).padStart(2, '0');
+            var mm = String(today.getMonth() + 1).padStart(2, '0');
+            let url = `https://api.wikimedia.org/feed/v1/wikipedia/en/featured/${year}/${mm}/${dd}`;
+
+            let response = await fetch(url);
+            if (response.ok) {
+                let data = await response.json();
+                return [
+                    {
+                        text: "**Featured Image:** " + data.image.description.text + "",
+                        children: [
+                            { text: "![" + data.image.description.text + "](" + data.image.thumbnail.source + ")" },
+                            { text: "[HD Image](" + data.image.image.source + ")" },
+                        ]
+                    },
+                ];
+            } else {
+                console.error(data);
+            }
+        };
     },
     onunload: () => {
         window.roamAlphaAPI.ui.commandPalette.removeCommand({
@@ -359,88 +529,3 @@ function sendConfigAlert(key) {
         alert("Please enter an integer for extract length in the configuration settings via the Roam Depot tab.");
     }
 }
-
-async function fetchOTD() {
-    let today = new Date();
-    let month = today.getMonth() + 1;
-    let day = today.getDate();
-    let url = `https://api.wikimedia.org/feed/v1/wikipedia/en/onthisday/all/${month}/${day}`;
-
-    let response = await fetch(url);
-    if (response.ok) {
-        let data = await response.json();
-        function shuffle(array) {
-            var i = array.length,
-                j = 0,
-                temp;
-            while (i--) {
-                j = Math.floor(Math.random() * (i + 1));
-                temp = array[i];
-                array[i] = array[j];
-                array[j] = temp;
-            }
-            return array;
-        }
-        var ranNums = shuffle(data.selected);
-
-        const regex = /(\s\((.+)?\s?pictured\)|\s\((.+)?\s?shown\)|\s\((.+)?\s?depicted\))/gm;
-        const subst = ``;
-        let string = "in ";
-        string += ranNums[0].year;
-        string += ":\n\n";
-        const result = ranNums[0].text.replace(regex, subst);
-        string += result;
-        string += "";
-        let string1 = "in ";
-        string1 += ranNums[1].year;
-        string1 += ":\n\n";
-        const result1 = ranNums[1].text.replace(regex, subst);
-        string1 += result1;
-        string1 += "";
-        let string2 = "in ";
-        string2 += ranNums[2].year;
-        string2 += ":\n\n";
-        const result2 = ranNums[2].text.replace(regex, subst);
-        string2 += result2;
-        string2 += "";
-        return [
-            {
-                text: "**On this Day...** #rm-hide #rm-horizontal",
-                children: [
-                    { text: string },
-                    { text: string1 },
-                    { text: string2 },
-                ]
-            }
-        ];
-    } else {
-        console.error(data);
-    }
-};
-
-async function fetchWFC() {
-    let today = new Date();
-    let year = today.getFullYear();
-    var dd = String(today.getDate()).padStart(2, '0');
-    var mm = String(today.getMonth() + 1).padStart(2, '0');
-    let url = `https://api.wikimedia.org/feed/v1/wikipedia/en/featured/${year}/${mm}/${dd}`;
-
-    let response = await fetch(url);
-    let data = await response.json();
-    if (response.ok) {
-        return [
-            {
-                text: "**Featured Article: [[" + data.tfa.titles.normalized + "]]** #rm-hide #rm-horizontal",
-                children: [
-                    { text: "" + data.tfa.extract + "" },
-                    { text: "![" + data.tfa.titles.normalized + "](" + data.tfa.originalimage.source + ")" },
-                ]
-            },
-            {
-                text: "" + data.tfa.content_urls.desktop.page + ""
-            },
-        ];
-    } else {
-        console.error(data);
-    }
-};

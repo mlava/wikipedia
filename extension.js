@@ -404,8 +404,8 @@ export default {
             let url = `https://api.wikimedia.org/feed/v1/wikipedia/${OTDlanguage}/onthisday/all/${month}/${day}`;
 
             let response = await fetch(url);
+            let data = await response.json();
             if (response.ok) {
-                let data = await response.json();
                 function shuffle(array) {
                     var i = array.length,
                         j = 0,
@@ -463,8 +463,8 @@ export default {
             let url = `https://api.wikimedia.org/feed/v1/wikipedia/${FClanguage}/featured/${year}/${mm}/${dd}`;
 
             let response = await fetch(url);
+            let data = await response.json();
             if (response.ok) {
-                let data = await response.json();
                 return [
                     {
                         text: "**Featured Article: [[" + data.tfa.titles.normalized + "]]** #rm-hide #rm-horizontal",
@@ -490,8 +490,8 @@ export default {
             let url = `https://api.wikimedia.org/feed/v1/wikipedia/en/featured/${year}/${mm}/${dd}`;
 
             let response = await fetch(url);
+            let data = await response.json();
             if (response.ok) {
-                let data = await response.json();
                 return [
                     {
                         text: "**Featured Image:** " + data.image.description.text + "",

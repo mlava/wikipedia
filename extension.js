@@ -149,19 +149,19 @@ export default {
                     id: "wiki-art-language",
                     name: "Wikipedia language",
                     description: "Any language code from https://wikistats.wmcloud.org/display.php?t=wp",
-                    action: { type: "input", placeholder: "en", onChange: (evt) => { ARTlanguage = evt.target.value; } },
+                    action: { type: "input", placeholder: "en", onChange: (evt) => { setArt(evt); } },
                 },
                 {
                     id: "wiki-feat-language",
                     name: "Featured Article language",
                     description: "Two-letter language code",
-                    action: { type: "select", items: ["bn", "de", "el", "en", "he", "hu", "ja", "la", "sd", "sv", "ur", "zh"], onChange: (evt) => { FClanguage = evt; } },
+                    action: { type: "select", items: ["en", "bn", "de", "el", "he", "hu", "ja", "la", "sd", "sv", "ur", "zh"], onChange: (evt) => { setFeat(evt); } },
                 },
                 {
                     id: "wiki-otd-language",
                     name: "On This Day language",
                     description: "Two-letter language code",
-                    action: { type: "select", items: ["en", "de", "fr", "sv", "pt", "ru", "es", "ar", "bs"], onChange: (evt) => { OTDlanguage = evt; } },
+                    action: { type: "select", items: ["en", "de", "fr", "sv", "pt", "ru", "es", "ar", "bs"], onChange: (evt) => { setOTD(evt); } },
                 },
             ]
         };
@@ -173,8 +173,27 @@ export default {
         } else {
             ARTlanguage = "en";
         }
-        FClanguage = extensionAPI.settings.get("wiki-feat-language");
-        OTDlanguage = extensionAPI.settings.get("wiki-otd-language");
+        if (extensionAPI.settings.get("wiki-feat-language")) {
+            FClanguage = extensionAPI.settings.get("wiki-feat-language");
+        } else {
+            FClanguage = "en";
+        }
+        if (extensionAPI.settings.get("wiki-otd-language")) {
+            OTDlanguage = extensionAPI.settings.get("wiki-otd-language");
+        } else {
+            OTDlanguage = "en";
+        }
+
+        // onChange
+        function setArt(evt) {
+            ARTlanguage = evt.target.value;
+        }
+        function setFeat(evt) {
+            FClanguage = evt;
+        }
+        function setOTD(evt) {
+            OTDlanguage = evt;
+        }
 
         window.roamAlphaAPI.ui.commandPalette.addCommand({
             label: "Wikipedia Page Import",

@@ -209,21 +209,30 @@ export default {
                 fetchWiki(uid).then(async (blocks) => {
                     await window.roamAlphaAPI.updateBlock(
                         { block: { uid: uid, string: blocks[0].text.toString(), open: true } });
-
-                    for (var i = 0; i < blocks[0].children.length; i++) {
+                    if (blocks[0]?.children[0].text.endsWith("may refer to:")) {
                         var thisBlock = window.roamAlphaAPI.util.generateUID();
                         await window.roamAlphaAPI.createBlock({
                             location: { "parent-uid": uid, order: i + 1 },
-                            block: { string: blocks[0].children[i].text.toString(), uid: thisBlock }
+                            block: { string: "No page found".toString(), uid: thisBlock }
+                        });
+                    } else {
+                        for (var i = 0; i < blocks[0].children.length; i++) {
+                            var thisBlock = window.roamAlphaAPI.util.generateUID();
+                            await window.roamAlphaAPI.createBlock({
+                                location: { "parent-uid": uid, order: i + 1 },
+                                block: { string: blocks[0].children[i].text.toString(), uid: thisBlock }
+                            });
+                        }
+
+                        const pageId = await window.roamAlphaAPI.pull("[*]", [":block/uid", uid])?.[":block/page"]?.[":db/id"];
+                        const pageUID = await window.roamAlphaAPI.pull("[:block/uid]", pageId)?.[":block/uid"]
+                        let order = await window.roamAlphaAPI.q(`[:find ?o :where [?r :block/order ?o] [?r :block/uid "${uid}"]]`)?.[0]?.[0]; // thanks to David Vargas https://github.com/dvargas92495/roam-client/blob/main/src/queries.ts#L58
+                        var thisBlock = window.roamAlphaAPI.util.generateUID();
+                        await window.roamAlphaAPI.createBlock({
+                            location: { "parent-uid": pageUID, order: order + 1 },
+                            block: { string: blocks[1].text.toString(), uid: thisBlock }
                         });
                     }
-                    const pageId = await window.roamAlphaAPI.pull("[*]", [":block/uid", uid])?.[":block/page"]?.[":db/id"];
-                    const pageUID = await window.roamAlphaAPI.pull("[:block/uid]", pageId)?.[":block/uid"]
-                    let order = await window.roamAlphaAPI.q(`[:find ?o :where [?r :block/order ?o] [?r :block/uid "${uid}"]]`)?.[0]?.[0]; // thanks to David Vargas https://github.com/dvargas92495/roam-client/blob/main/src/queries.ts#L58                var thisBlock = window.roamAlphaAPI.util.generateUID();
-                    await window.roamAlphaAPI.createBlock({
-                        location: { "parent-uid": pageUID, order: order + 1 },
-                        block: { string: blocks[1].text.toString(), uid: thisBlock }
-                    });
                 });
             },
         });
@@ -362,7 +371,7 @@ export default {
                         await window.roamAlphaAPI.ui.mainWindow.getOpenPageOrBlockUid()
                     ])?.[":node/title"];
                 var url = `https://${ARTlanguage}.wikipedia.org/w/api.php?action=query&format=json&list=search&srsearch=${pageTitle}&origin=*`;
-                
+
                 return fetch(url).then(r => r.json()).then((wiki) => {
                     const options = wiki.query.search
                         .map(m => ({ label: m.title, id: m.pageid }));

@@ -1,6 +1,7 @@
 This simple extension takes your Roam Research page name as a search query for Wikipedia, and returns the extract, featured image and a link to the Wikipedia page.
 
 **New:**
+- compatible with Roam Research Hotkeys.
 - Configure a preferred language for Page Import, Featured Article and On This Day
 - Import the featured image of the day
 

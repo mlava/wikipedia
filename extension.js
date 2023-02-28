@@ -493,18 +493,34 @@ export default {
             let response = await fetch(url);
             let data = await response.json();
             if (response.ok) {
-                return [
-                    {
-                        text: "**Featured Article: [[" + data.tfa.titles.normalized + "]]** #rm-hide #rm-horizontal",
-                        children: [
-                            { text: "" + data.tfa.extract + "" },
-                            { text: "![" + data.tfa.titles.normalized + "](" + data.tfa.originalimage.source + ")" },
-                        ]
-                    },
-                    {
-                        text: "" + data.tfa.content_urls.desktop.page + ""
-                    },
-                ];
+                if (data.tfa.hasOwnProperty("originalimage")) {
+                    return [
+                        {
+                            text: "**Featured Article: [[" + data.tfa.titles.normalized + "]]** #rm-hide #rm-horizontal",
+                            children: [
+                                { text: "" + data.tfa.extract + "" },
+                                { text: "![" + data.tfa.titles.normalized + "](" + data.tfa.originalimage.source + ")" },
+                            ]
+                        },
+                        {
+                            text: "" + data.tfa.content_urls.desktop.page + ""
+                        },
+                    ];
+                } else {
+
+                    return [
+                        {
+                            text: "**Featured Article: [[" + data.tfa.titles.normalized + "]]** #rm-hide #rm-horizontal",
+                            children: [
+                                { text: "" + data.tfa.extract + "" },
+                                { text: "No featured image" },
+                            ]
+                        },
+                        {
+                            text: "" + data.tfa.content_urls.desktop.page + ""
+                        },
+                    ];
+                }
             } else {
                 console.error(data);
             }

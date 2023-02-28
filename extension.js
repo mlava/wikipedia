@@ -195,7 +195,7 @@ export default {
             OTDlanguage = evt;
         }
 
-        window.roamAlphaAPI.ui.commandPalette.addCommand({
+        extensionAPI.ui.commandPalette.addCommand({
             label: "Wikipedia Page Import",
             callback: () => {
                 const uid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
@@ -236,7 +236,7 @@ export default {
                 });
             },
         });
-        window.roamAlphaAPI.ui.commandPalette.addCommand({
+        extensionAPI.ui.commandPalette.addCommand({
             label: "Wikipedia On This Day",
             callback: () => {
                 const uid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
@@ -260,7 +260,7 @@ export default {
                 })
             }
         });
-        window.roamAlphaAPI.ui.commandPalette.addCommand({
+        extensionAPI.ui.commandPalette.addCommand({
             label: "Wikipedia Featured Content",
             callback: () => {
                 const uid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
@@ -284,7 +284,7 @@ export default {
                 })
             }
         });
-        window.roamAlphaAPI.ui.commandPalette.addCommand({
+        extensionAPI.ui.commandPalette.addCommand({
             label: "Wikipedia Featured Image",
             callback: () => {
                 const uid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
@@ -551,15 +551,6 @@ export default {
         };
     },
     onunload: () => {
-        window.roamAlphaAPI.ui.commandPalette.removeCommand({
-            label: 'Wikipedia Page Import'
-        });
-        window.roamAlphaAPI.ui.commandPalette.removeCommand({
-            label: 'Wikipedia On This Day'
-        });
-        window.roamAlphaAPI.ui.commandPalette.removeCommand({
-            label: 'Wikipedia Featured Content'
-        });
         if (window.roamjs?.extension?.smartblocks) {
             window.roamjs.extension.smartblocks.unregisterCommand("WIKIPEDIA");
             window.roamjs.extension.smartblocks.unregisterCommand("ONTHISDAY");

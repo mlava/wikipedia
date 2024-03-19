@@ -116,14 +116,19 @@ export default {
                         { block: { uid: uid, string: "Loading...".toString(), open: true } });
                 }
                 fetchOTD().then(async (blocks) => {
-                    await window.roamAlphaAPI.updateBlock(
-                        { block: { uid: uid, string: blocks[0].text.toString(), open: true } });
-                    for (var i = 0; i < blocks[0].children.length; i++) {
-                        var thisBlock = window.roamAlphaAPI.util.generateUID();
-                        await window.roamAlphaAPI.createBlock({
-                            location: { "parent-uid": uid, order: i + 1 },
-                            block: { string: blocks[0].children[i].text.toString(), uid: thisBlock }
-                        });
+                    if (blocks == "error") {
+                        await window.roamAlphaAPI.updateBlock(
+                            { block: { uid: uid, string: "Error loading data from Wikipedia", open: true } });
+                    } else {
+                        await window.roamAlphaAPI.updateBlock(
+                            { block: { uid: uid, string: blocks[0].text.toString(), open: true } });
+                        for (var i = 0; i < blocks[0].children.length; i++) {
+                            var thisBlock = window.roamAlphaAPI.util.generateUID();
+                            await window.roamAlphaAPI.createBlock({
+                                location: { "parent-uid": uid, order: i + 1 },
+                                block: { string: blocks[0].children[i].text.toString(), uid: thisBlock }
+                            });
+                        }
                     }
                 })
             }
@@ -140,14 +145,19 @@ export default {
                         { block: { uid: uid, string: "Loading...".toString(), open: true } });
                 }
                 fetchWFC().then(async (blocks) => {
-                    await window.roamAlphaAPI.updateBlock(
-                        { block: { uid: uid, string: blocks[0].text.toString(), open: true } });
-                    for (var i = 0; i < blocks[0].children.length; i++) {
-                        var thisBlock = window.roamAlphaAPI.util.generateUID();
-                        await window.roamAlphaAPI.createBlock({
-                            location: { "parent-uid": uid, order: i + 1 },
-                            block: { string: blocks[0].children[i].text.toString(), uid: thisBlock }
-                        });
+                    if (blocks == "error") {
+                        await window.roamAlphaAPI.updateBlock(
+                            { block: { uid: uid, string: "Error loading data from Wikipedia", open: true } });
+                    } else {
+                        await window.roamAlphaAPI.updateBlock(
+                            { block: { uid: uid, string: blocks[0].text.toString(), open: true } });
+                        for (var i = 0; i < blocks[0].children.length; i++) {
+                            var thisBlock = window.roamAlphaAPI.util.generateUID();
+                            await window.roamAlphaAPI.createBlock({
+                                location: { "parent-uid": uid, order: i + 1 },
+                                block: { string: blocks[0].children[i].text.toString(), uid: thisBlock }
+                            });
+                        }
                     }
                 })
             }
@@ -164,14 +174,19 @@ export default {
                         { block: { uid: uid, string: "Loading...".toString(), open: true } });
                 }
                 fetchWFCI().then(async (blocks) => {
-                    await window.roamAlphaAPI.updateBlock(
-                        { block: { uid: uid, string: blocks[0].text.toString(), open: true } });
-                    for (var i = 0; i < blocks[0].children.length; i++) {
-                        var thisBlock = window.roamAlphaAPI.util.generateUID();
-                        await window.roamAlphaAPI.createBlock({
-                            location: { "parent-uid": uid, order: i + 1 },
-                            block: { string: blocks[0].children[i].text.toString(), uid: thisBlock }
-                        });
+                    if (blocks == "error") {
+                        await window.roamAlphaAPI.updateBlock(
+                            { block: { uid: uid, string: "Error loading data from Wikipedia", open: true } });
+                    } else {
+                        await window.roamAlphaAPI.updateBlock(
+                            { block: { uid: uid, string: blocks[0].text.toString(), open: true } });
+                        for (var i = 0; i < blocks[0].children.length; i++) {
+                            var thisBlock = window.roamAlphaAPI.util.generateUID();
+                            await window.roamAlphaAPI.createBlock({
+                                location: { "parent-uid": uid, order: i + 1 },
+                                block: { string: blocks[0].children[i].text.toString(), uid: thisBlock }
+                            });
+                        }
                     }
                 })
             }
@@ -300,7 +315,9 @@ export default {
             let url = `https://api.wikimedia.org/feed/v1/wikipedia/${OTDlanguage}/onthisday/all/${month}/${day}`;
 
             let response = await fetch(url);
+            console.info(response);
             let data = await response.json();
+            console.info(data);
             if (response.ok) {
                 function shuffle(array) {
                     var i = array.length,
@@ -315,6 +332,7 @@ export default {
                     return array;
                 }
                 var ranNums = shuffle(data.selected);
+                console.info(ranNums);
 
                 const regex = /(\s\((.+)?\s?pictured\)|\s\((.+)?\s?shown\)|\s\((.+)?\s?depicted\)|\s\((.+)?\s?audio featured\))/gm;
                 const subst = ``;
@@ -348,6 +366,7 @@ export default {
                 ];
             } else {
                 console.error(data);
+                return "error";
             }
         };
 
@@ -391,6 +410,7 @@ export default {
                 }
             } else {
                 console.error(data);
+                return "error";
             }
         };
 
@@ -415,6 +435,7 @@ export default {
                 ];
             } else {
                 console.error(data);
+                return "error";
             }
         };
     },

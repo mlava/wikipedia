@@ -1,9 +1,16 @@
 This simple extension takes your Roam Research page name as a search query for Wikipedia, and returns the extract, featured image and a link to the Wikipedia page.
 
 **New:**
-- compatible with Roam Research Hotkeys.
+- updated to use Wikimedia API keys
+- compatible with Roam Research Hotkeys
 - Configure a preferred language for Page Import, Featured Article and On This Day
 - Import the featured image of the day
+
+**Note:**
+Many of the Wikipedia endpoints now require an API key. You can create a key by going to https://api.wikimedia.org/wiki/Special:AppManagement. Click the 'Create key' button, then fill in any text in the App name and description fields. Select PErsonal API token (for your use only) in the Key type section. Agree to the terms of use and then click the blue 'Create' button.
+
+You will then be presented with a Client ID, Client Secret and Access token. Copy the entire Access token and paste it into the first field in the Roam Depot settings for this extension 'Wikimedia API key'. You should now be able to access the On This Day, Featured Image and Feature Content endpoints.
+
 
 You can configure the number of sentences from the extract to obtain in the Roam Depot configuration settings, but the default is 6. No other configuration is required, although you can optionally change the language as well.
 

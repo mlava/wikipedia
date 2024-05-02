@@ -1,12 +1,19 @@
 var ARTlanguage = "en";
 var OTDlanguage = "en";
 var FClanguage = "en";
+var APIkey, key;
 
 export default {
     onload: ({ extensionAPI }) => {
         const config = {
             tabTitle: "Wikipedia import",
             settings: [
+                {
+                    id: "wiki-apikey",
+                    name: "Wikimedia API key",
+                    description: "Obtain an API key from https://api.wikimedia.org/wiki/Special:AppManagement. Click on Create key button and then select a Personal API token option.",
+                    action: { type: "input", placeholder: "" },
+                },
                 {
                     id: "wiki-sentences",
                     name: "Extract sentences",
@@ -36,6 +43,9 @@ export default {
         extensionAPI.settings.panel.create(config);
 
         // onload
+        if (extensionAPI.settings.get("wiki-apikey")) {
+            APIkey = extensionAPI.settings.get("wiki-apikey");
+        }
         if (extensionAPI.settings.get("wiki-art-language")) {
             ARTlanguage = extensionAPI.settings.get("wiki-art-language");
         } else {
@@ -309,133 +319,166 @@ export default {
         }
 
         async function fetchOTD() {
-            let today = new Date();
-            let month = today.getMonth() + 1;
-            let day = today.getDate();
-            let url = `https://api.wikimedia.org/feed/v1/wikipedia/${OTDlanguage}/onthisday/all/${month}/${day}`;
+            breakme: {
+                if (!extensionAPI.settings.get("wiki-apikey")) {
+                    key = "API";
+                    sendConfigAlert(key);
+                    break breakme;
+                } else {
 
-            let response = await fetch(url);
-            console.info(response);
-            let data = await response.json();
-            console.info(data);
-            if (response.ok) {
-                function shuffle(array) {
-                    var i = array.length,
-                        j = 0,
-                        temp;
-                    while (i--) {
-                        j = Math.floor(Math.random() * (i + 1));
-                        temp = array[i];
-                        array[i] = array[j];
-                        array[j] = temp;
+                    APIkey = extensionAPI.settings.get("wiki-apikey");
+
+                    let today = new Date();
+                    let month = today.getMonth() + 1;
+                    let day = today.getDate();
+                    let url = `https://api.wikimedia.org/feed/v1/wikipedia/${OTDlanguage}/onthisday/all/${month}/${day}`;
+
+                    let response = await fetch(url, {
+                        headers: {
+                            'Authorization': "Bearer " + APIkey
+                        }
+                    });
+
+                    let data = await response.json();
+                    if (response.ok) {
+                        function shuffle(array) {
+                            var i = array.length,
+                                j = 0,
+                                temp;
+                            while (i--) {
+                                j = Math.floor(Math.random() * (i + 1));
+                                temp = array[i];
+                                array[i] = array[j];
+                                array[j] = temp;
+                            }
+                            return array;
+                        }
+                        var ranNums = shuffle(data.selected);
+                        console.info(ranNums);
+
+                        const regex = /(\s\((.+)?\s?pictured\)|\s\((.+)?\s?shown\)|\s\((.+)?\s?depicted\)|\s\((.+)?\s?audio featured\))/gm;
+                        const subst = ``;
+                        let string = "in ";
+                        string += ranNums[0].year;
+                        string += ":\n\n";
+                        var result = ranNums[0].text.replace(regex, subst);
+                        string += result;
+                        string += "";
+                        let string1 = "in ";
+                        string1 += ranNums[1].year;
+                        string1 += ":\n\n";
+                        var result1 = ranNums[1].text.replace(regex, subst);
+                        string1 += result1;
+                        string1 += "";
+                        let string2 = "in ";
+                        string2 += ranNums[2].year;
+                        string2 += ":\n\n";
+                        var result2 = ranNums[2].text.replace(regex, subst);
+                        string2 += result2;
+                        string2 += "";
+                        return [
+                            {
+                                text: "**On this Day...** #rm-hide #rm-horizontal",
+                                children: [
+                                    { text: string },
+                                    { text: string1 },
+                                    { text: string2 },
+                                ]
+                            }
+                        ];
+                    } else {
+                        console.error(data);
+                        return "error";
                     }
-                    return array;
                 }
-                var ranNums = shuffle(data.selected);
-                console.info(ranNums);
-
-                const regex = /(\s\((.+)?\s?pictured\)|\s\((.+)?\s?shown\)|\s\((.+)?\s?depicted\)|\s\((.+)?\s?audio featured\))/gm;
-                const subst = ``;
-                let string = "in ";
-                string += ranNums[0].year;
-                string += ":\n\n";
-                var result = ranNums[0].text.replace(regex, subst);
-                string += result;
-                string += "";
-                let string1 = "in ";
-                string1 += ranNums[1].year;
-                string1 += ":\n\n";
-                var result1 = ranNums[1].text.replace(regex, subst);
-                string1 += result1;
-                string1 += "";
-                let string2 = "in ";
-                string2 += ranNums[2].year;
-                string2 += ":\n\n";
-                var result2 = ranNums[2].text.replace(regex, subst);
-                string2 += result2;
-                string2 += "";
-                return [
-                    {
-                        text: "**On this Day...** #rm-hide #rm-horizontal",
-                        children: [
-                            { text: string },
-                            { text: string1 },
-                            { text: string2 },
-                        ]
-                    }
-                ];
-            } else {
-                console.error(data);
-                return "error";
             }
+
         };
 
         async function fetchWFC() {
-            let today = new Date();
-            let year = today.getFullYear();
-            var dd = String(today.getDate()).padStart(2, '0');
-            var mm = String(today.getMonth() + 1).padStart(2, '0');
-            let url = `https://api.wikimedia.org/feed/v1/wikipedia/${FClanguage}/featured/${year}/${mm}/${dd}`;
-
-            let response = await fetch(url);
-            let data = await response.json();
-            if (response.ok) {
-                if (data.tfa.hasOwnProperty("originalimage")) {
-                    return [
-                        {
-                            text: "**Featured Article: [[" + data.tfa.titles.normalized + "]]** #rm-hide #rm-horizontal",
-                            children: [
-                                { text: "" + data.tfa.extract + "" },
-                                { text: "![" + data.tfa.titles.normalized + "](" + data.tfa.originalimage.source + ")" },
-                            ]
-                        },
-                        {
-                            text: "" + data.tfa.content_urls.desktop.page + ""
-                        },
-                    ];
+            breakme: {
+                if (!extensionAPI.settings.get("wiki-apikey")) {
+                    key = "API";
+                    sendConfigAlert(key);
+                    break breakme;
                 } else {
+                    APIkey = extensionAPI.settings.get("wiki-apikey");
+                    let today = new Date();
+                    let year = today.getFullYear();
+                    var dd = String(today.getDate()).padStart(2, '0');
+                    var mm = String(today.getMonth() + 1).padStart(2, '0');
+                    let url = `https://api.wikimedia.org/feed/v1/wikipedia/${FClanguage}/featured/${year}/${mm}/${dd}`;
 
-                    return [
-                        {
-                            text: "**Featured Article: [[" + data.tfa.titles.normalized + "]]** #rm-hide #rm-horizontal",
-                            children: [
-                                { text: "" + data.tfa.extract + "" },
-                                { text: "No featured image" },
-                            ]
-                        },
-                        {
-                            text: "" + data.tfa.content_urls.desktop.page + ""
-                        },
-                    ];
+                    let response = await fetch(url);
+                    let data = await response.json();
+                    if (response.ok) {
+                        if (data.tfa.hasOwnProperty("originalimage")) {
+                            return [
+                                {
+                                    text: "**Featured Article: [[" + data.tfa.titles.normalized + "]]** #rm-hide #rm-horizontal",
+                                    children: [
+                                        { text: "" + data.tfa.extract + "" },
+                                        { text: "![" + data.tfa.titles.normalized + "](" + data.tfa.originalimage.source + ")" },
+                                    ]
+                                },
+                                {
+                                    text: "" + data.tfa.content_urls.desktop.page + ""
+                                },
+                            ];
+                        } else {
+
+                            return [
+                                {
+                                    text: "**Featured Article: [[" + data.tfa.titles.normalized + "]]** #rm-hide #rm-horizontal",
+                                    children: [
+                                        { text: "" + data.tfa.extract + "" },
+                                        { text: "No featured image" },
+                                    ]
+                                },
+                                {
+                                    text: "" + data.tfa.content_urls.desktop.page + ""
+                                },
+                            ];
+                        }
+                    } else {
+                        console.error(data);
+                        return "error";
+                    }
                 }
-            } else {
-                console.error(data);
-                return "error";
             }
         };
 
         async function fetchWFCI() {
-            let today = new Date();
-            let year = today.getFullYear();
-            var dd = String(today.getDate()).padStart(2, '0');
-            var mm = String(today.getMonth() + 1).padStart(2, '0');
-            let url = `https://api.wikimedia.org/feed/v1/wikipedia/en/featured/${year}/${mm}/${dd}`;
+            breakme: {
+                if (!extensionAPI.settings.get("wiki-apikey")) {
+                    key = "API";
+                    sendConfigAlert(key);
+                    break breakme;
+                } else {
+                    APIkey = extensionAPI.settings.get("wiki-apikey");
+                    let today = new Date();
+                    let year = today.getFullYear();
+                    var dd = String(today.getDate()).padStart(2, '0');
+                    var mm = String(today.getMonth() + 1).padStart(2, '0');
+                    let url = `https://api.wikimedia.org/feed/v1/wikipedia/en/featured/${year}/${mm}/${dd}`;
 
-            let response = await fetch(url);
-            let data = await response.json();
-            if (response.ok) {
-                return [
-                    {
-                        text: "**Featured Image:** " + data.image.description.text + "",
-                        children: [
-                            { text: "![" + data.image.description.text + "](" + data.image.thumbnail.source + ")" },
-                            { text: "[HD Image](" + data.image.image.source + ")" },
-                        ]
-                    },
-                ];
-            } else {
-                console.error(data);
-                return "error";
+                    let response = await fetch(url);
+                    let data = await response.json();
+                    if (response.ok) {
+                        return [
+                            {
+                                text: "**Featured Image:** " + data.image.description.text + "",
+                                children: [
+                                    { text: "![" + data.image.description.text + "](" + data.image.thumbnail.source + ")" },
+                                    { text: "[HD Image](" + data.image.image.source + ")" },
+                                ]
+                            },
+                        ];
+                    } else {
+                        console.error(data);
+                        return "error";
+                    }
+                }
             }
         };
     },
@@ -444,6 +487,7 @@ export default {
             window.roamjs.extension.smartblocks.unregisterCommand("WIKIPEDIA");
             window.roamjs.extension.smartblocks.unregisterCommand("ONTHISDAY");
             window.roamjs.extension.smartblocks.unregisterCommand("WIKIFEATURED");
+            window.roamjs.extension.smartblocks.unregisterCommand("WIKIIMAGE");
         };
     }
 }
@@ -451,7 +495,9 @@ export default {
 // helper functions
 
 function sendConfigAlert(key) {
-    if (key == "sentences") {
+    if (key == "API") {
+        alert("Please set the API key from https://api.wikimedia.org/wiki/Special:AppManagement in Roam Depot settings. Click on Create key button and then select a Personal API token option.");
+    } else if (key == "sentences") {
         alert("Please enter an integer for extract length in the configuration settings via the Roam Depot tab.");
     }
 }

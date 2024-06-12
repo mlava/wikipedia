@@ -411,8 +411,15 @@ export default {
 
                     let response = await fetch(url);
                     let data = await response.json();
+                    console.info(data);
                     if (response.ok) {
-                        if (data.tfa.hasOwnProperty("originalimage")) {
+                        if (!data.hasOwnProperty("tfa")) {
+                            return [
+                                {
+                                    text: "There is no featured article available today!",
+                                },
+                            ];
+                        } else if (data.tfa.hasOwnProperty("originalimage")) {
                             return [
                                 {
                                     text: "**Featured Article: [[" + data.tfa.titles.normalized + "]]** #rm-hide #rm-horizontal",

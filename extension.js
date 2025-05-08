@@ -331,6 +331,12 @@ export default {
                     let today = new Date();
                     let month = today.getMonth() + 1;
                     let day = today.getDate();
+                    if (month < 10) {
+                        month = "0" + month;
+                    }
+                    if (day < 10) {
+                        day = "0" + day;
+                    }
                     let url = `https://api.wikimedia.org/feed/v1/wikipedia/${OTDlanguage}/onthisday/all/${month}/${day}`;
 
                     let response = await fetch(url, {
@@ -354,7 +360,6 @@ export default {
                             return array;
                         }
                         var ranNums = shuffle(data.selected);
-                        console.info(ranNums);
 
                         const regex = /(\s\((.+)?\s?pictured\)|\s\((.+)?\s?shown\)|\s\((.+)?\s?depicted\)|\s\((.+)?\s?audio featured\))/gm;
                         const subst = ``;
@@ -411,7 +416,6 @@ export default {
 
                     let response = await fetch(url);
                     let data = await response.json();
-                    console.info(data);
                     if (response.ok) {
                         if (!data.hasOwnProperty("tfa")) {
                             return [

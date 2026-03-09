@@ -459,6 +459,170 @@ export default {
             }
         };
 
+        // COS Extension Tools registration
+        window.RoamExtensionTools = window.RoamExtensionTools || {};
+        window.RoamExtensionTools["wikipedia"] = {
+            name: "Wikipedia",
+            version: "1.0",
+            tools: [
+                {
+                    name: "wp_search",
+                    description: "Search Wikipedia for articles matching a query. Returns a list of results with title, page ID, and snippet.",
+                    readOnly: true,
+                    parameters: {
+                        type: "object",
+                        properties: {
+                            query: {
+                                type: "string",
+                                description: "The search query."
+                            },
+                            language: {
+                                type: "string",
+                                description: "Wikipedia language code (e.g. 'en', 'de', 'fr'). Defaults to the user's configured language."
+                            }
+                        },
+                        required: ["query"]
+                    },
+                    execute: async (args) => {
+                        const lang = args.language || extensionAPI.settings.get("wiki-art-language") || "en";
+                        const url = `https://${lang}.wikipedia.org/w/api.php?action=query&format=json&list=search&srsearch=${encodeURIComponent(args.query)}&origin=*`;
+                        try {
+                            const resp = await fetch(url);
+                            const data = await resp.json();
+                            if (!data.query?.search) return { error: "No results returned from Wikipedia." };
+                            const results = data.query.search.map(m => ({
+                                title: m.title,
+                                pageid: m.pageid,
+                                snippet: m.snippet.replace(/<[^>]+>/g, "")
+                            }));
+                            return { results };
+                        } catch (e) {
+                            return { error: "Wikipedia search failed: " + e.message };
+                        }
+                    }
+                },
+                {
+                    name: "wp_get_summary",
+                    description: "Get a Wikipedia article summary by page ID (from wp_search results). Returns the title, extract text, canonical URL, and image URL.",
+                    readOnly: true,
+                    parameters: {
+                        type: "object",
+                        properties: {
+                            page_id: {
+                                type: "number",
+                                description: "The Wikipedia page ID (from wp_search results)."
+                            },
+                            sentences: {
+                                type: "number",
+                                description: "Number of sentences to extract (1-99). Defaults to the user's configured value or 6."
+                            },
+                            language: {
+                                type: "string",
+                                description: "Wikipedia language code. Defaults to the user's configured language."
+                            }
+                        },
+                        required: ["page_id"]
+                    },
+                    execute: async (args) => {
+                        const lang = args.language || extensionAPI.settings.get("wiki-art-language") || "en";
+                        let sentences = "6";
+                        if (args.sentences != null) {
+                            if (/^[0-9]{1,2}$/.test(String(args.sentences))) {
+                                sentences = String(args.sentences);
+                            } else {
+                                return { error: "sentences must be an integer between 1 and 99." };
+                            }
+                        } else if (extensionAPI.settings.get("wiki-sentences")) {
+                            const s = extensionAPI.settings.get("wiki-sentences");
+                            if (/^[0-9]{1,2}$/.test(s)) sentences = s;
+                        }
+                        const pageId = args.page_id;
+                        const extractUrl = `https://${lang}.wikipedia.org/w/api.php?format=json&action=query&exintro&explaintext&exsentences=${sentences}&exlimit=max&origin=*&prop=info|extracts&inprop=url&pageids=${pageId}`;
+                        try {
+                            const resp = await fetch(extractUrl);
+                            const data = await resp.json();
+                            const page = data.query?.pages?.[pageId];
+                            if (!page) return { error: "Page not found for ID " + pageId };
+                            const title = page.title || null;
+                            const extract = page.extract || "";
+                            const url = page.canonicalurl || page.fullurl || null;
+
+                            // Fetch image separately using the title
+                            let image_url = null;
+                            if (title) {
+                                try {
+                                    const imgUrl = `https://${lang}.wikipedia.org/w/api.php?action=query&prop=pageimages&format=json&piprop=original&titles=${encodeURIComponent(title)}&formatversion=2&origin=*`;
+                                    const imgResp = await fetch(imgUrl);
+                                    const imgData = await imgResp.json();
+                                    const imgPage = imgData.query?.pages?.[0];
+                                    if (imgPage?.original?.source) {
+                                        image_url = imgPage.original.source;
+                                    }
+                                } catch (_) { /* image fetch is best-effort */ }
+                            }
+
+                            return { title, extract, url, image_url };
+                        } catch (e) {
+                            return { error: "Wikipedia summary fetch failed: " + e.message };
+                        }
+                    }
+                },
+                {
+                    name: "wp_get_featured_article",
+                    description: "Get today's (or a specified date's) featured article from Wikipedia. Returns the title, extract, URL, and image URL. Requires a Wikimedia API key in extension settings.",
+                    readOnly: true,
+                    parameters: {
+                        type: "object",
+                        properties: {
+                            date: {
+                                type: "string",
+                                description: "Date in YYYY/MM/DD format. Defaults to today."
+                            },
+                            language: {
+                                type: "string",
+                                description: "Two-letter language code. Defaults to the user's configured featured article language."
+                            }
+                        },
+                        required: []
+                    },
+                    execute: async (args) => {
+                        const apiKey = extensionAPI.settings.get("wiki-apikey");
+                        if (!apiKey) return { error: "Wikimedia API key not configured. Set it in the Wikipedia extension settings." };
+                        const lang = args.language || extensionAPI.settings.get("wiki-feat-language") || "en";
+                        let year, mm, dd;
+                        if (args.date) {
+                            const parts = args.date.split(/[\/\-]/);
+                            if (parts.length === 3) {
+                                year = parts[0]; mm = parts[1].padStart(2, "0"); dd = parts[2].padStart(2, "0");
+                            } else {
+                                return { error: "Invalid date format. Use YYYY/MM/DD." };
+                            }
+                        } else {
+                            const today = new Date();
+                            year = today.getFullYear();
+                            mm = String(today.getMonth() + 1).padStart(2, "0");
+                            dd = String(today.getDate()).padStart(2, "0");
+                        }
+                        const url = `https://api.wikimedia.org/feed/v1/wikipedia/${lang}/featured/${year}/${mm}/${dd}`;
+                        try {
+                            const resp = await fetch(url);
+                            const data = await resp.json();
+                            if (!resp.ok) return { error: "Wikimedia API error: " + (data.detail || data.title || resp.status) };
+                            if (!data.tfa) return { error: "No featured article available for this date." };
+                            return {
+                                title: data.tfa.titles?.normalized || null,
+                                extract: data.tfa.extract || "",
+                                url: data.tfa.content_urls?.desktop?.page || null,
+                                image_url: data.tfa.originalimage?.source || null
+                            };
+                        } catch (e) {
+                            return { error: "Featured article fetch failed: " + e.message };
+                        }
+                    }
+                }
+            ]
+        };
+
         async function fetchWFCI() {
             breakme: {
                 if (!extensionAPI.settings.get("wiki-apikey")) {
@@ -494,6 +658,7 @@ export default {
         };
     },
     onunload: () => {
+        delete window.RoamExtensionTools?.["wikipedia"];
         if (window.roamjs?.extension?.smartblocks) {
             window.roamjs.extension.smartblocks.unregisterCommand("WIKIPEDIA");
             window.roamjs.extension.smartblocks.unregisterCommand("ONTHISDAY");
